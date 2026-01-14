@@ -35,10 +35,15 @@ userSchema.pre("save", async function (next) {
 userSchema.methods.getName = function () {
 	return this.name;
 };
-userSchema.methods.createJWT = async function (userId) {
-	return jwt.sign({ userId, name: this.name }, process.env.JWT_SECRET, {
+userSchema.methods.createJWT =  function () {
+	return jwt.sign({ userId: this._id, name: this.name }, process.env.JWT_SECRET, {
 		expiresIn: "1d",
 	});
 };
+
+userSchema.methods.comparePasswords = async function(candidatePassword){
+    const ismatch = await bcrypt.compare(candidatePassword, this.password);
+    return ismatch;
+}
 
 export default mongoose.model("User", userSchema);

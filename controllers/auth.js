@@ -1,6 +1,6 @@
 import User from "../models/User.js";
 import { StatusCodes } from "http-status-codes";
-import { BadRequestError } from "../errors/index.js";
+import { BadRequestError, UnauthenticatedError } from "../errors/index.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 const register = async (req, res) => {
@@ -29,7 +29,28 @@ const register = async (req, res) => {
 	}
 };
 const login = async (req, res) => {
-	res.send("login user");
+	const { email, password } = req.body;
+	if (!email || !password) {
+		throw new BadRequestError("Please prvide email and password");
+	}
+	try {
+		const user = await User.findOne({ email });
+		if (!user) {
+			throw new UnauthenticatedError("Invalid credentials");
+		}
+        //compare passwords
+        const isPasswordCorrect = await user.comparePasswords(password);
+        if(!isPasswordCorrect){
+            throw new UnauthenticatedError("Invalid credentials");
+        }
+		const token = user.createJWT();
+		res
+			.status(StatusCodes.OK)
+			.json({ success: true, data: user.getName(), token });
+	} catch (error) {
+		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error });
+	}
+
 };
 
 export { register, login };
