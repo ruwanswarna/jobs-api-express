@@ -1,1 +1,22 @@
 import jwt from "jsonwebtoken";
+import "dotenv/config";
+import User from "../models/User.js";
+import { UnauthenticatedError } from "../errors/index.js";
+const auth = async (req, res, next) => {
+	//check header
+	const authHeader = req.headers.authorization;
+	if (!authHeader || !authHeader.startsWith("Bearer ")) {
+		throw new UnauthenticatedError("Authentication invalid");
+	}
+	const token = authHeader.split(" ")[1];
+	try {
+		const payload = await jwt.verify(token, process.env.JWT_SECRET); //this throws error if token cannot be verified
+		// attach the user to the job routes
+		req.user = { userId: payload.userId, name: payload.name };
+        next();
+	} catch (error) {
+        throw new UnauthenticatedError("Authentication invalid");
+    }
+};
+
+export default auth;
