@@ -12,45 +12,36 @@ const register = async (req, res) => {
 	if (!name || !email || !password) {
 		throw new BadRequestError("Please provide name, email, and password");
 	}
-	try {
-		const user = await User.create({ ...req.body });
 
-		const payload = { userId: user._id, name: user.name };
-		const token = await jwt.sign(payload, process.env.JWT_SECRET, {
-			expiresIn: "1d",
-		});
-		res
-			.status(StatusCodes.CREATED)
-			.json({ success: true, data: user.getName(), token }); // mongoose instance method
-	} catch (error) {
-		res
-			.status(StatusCodes.INTERNAL_SERVER_ERROR)
-			.json({ success: false, error });
-	}
+	const user = await User.create({ ...req.body });
+
+	const payload = { userId: user._id, name: user.name };
+	const token = await jwt.sign(payload, process.env.JWT_SECRET, {
+		expiresIn: "1d",
+	});
+	res
+		.status(StatusCodes.CREATED)
+		.json({ success: true, data: user.getName(), token }); // mo ngoose instance method
 };
 const login = async (req, res) => {
 	const { email, password } = req.body;
 	if (!email || !password) {
 		throw new BadRequestError("Please prvide email and password");
 	}
-	try {
-		const user = await User.findOne({ email });
-		if (!user) {
-			throw new UnauthenticatedError("Invalid credentials");
-		}
-        //compare passwords
-        const isPasswordCorrect = await user.comparePasswords(password);
-        if(!isPasswordCorrect){
-            throw new UnauthenticatedError("Invalid credentials");
-        }
-		const token = user.createJWT();
-		res
-			.status(StatusCodes.OK)
-			.json({ success: true, data: user.getName(), token });
-	} catch (error) {
-		res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error });
-	}
 
+	const user = await User.findOne({ email });
+	if (!user) {
+		throw new UnauthenticatedError("Invalid credentials");
+	}
+	//compare passwords
+	const isPasswordCorrect = await user.comparePasswords(password);
+	if (!isPasswordCorrect) {
+		throw new UnauthenticatedError("Invalid credentials");
+	}
+	const token = user.createJWT();
+	res
+		.status(StatusCodes.OK)
+		.json({ success: true, data: user.getName(), token });
 };
 
 export { register, login };
